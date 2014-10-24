@@ -5,5 +5,5 @@ import models.UserData
 import scala.concurrent.Future
 
 trait UserService {
-  def userStatus(userId: String): Future[UserData]
+  def userStatus(userId: Long): Future[List[UserData]]
 }

@@ -1,9 +1,13 @@
 package conf
 
+import java.util.concurrent.Executors
+
 import play.api.libs.concurrent.Akka
-import play.api.{Play, Logger, Application, GlobalSettings}
+import play.api.{Logger, Application, GlobalSettings}
 import services._
 import play.api.Play.current
+
+import scala.concurrent.{Future, ExecutionContext}
 
 object Global extends GlobalSettings{
   private var _badgesDb: BadgesDB = _
@@ -12,10 +16,19 @@ object Global extends GlobalSettings{
 
   override def onStart(app: Application): Unit = {
     val configuration = current.configuration
-    _badgesDb = new MongoBadgesDB
-    _users = new MongoUserService(badgesDb)
+    _badgesDb = new JdbcBadgesDB
+    Logger.info("DB connection started.")
     _eventsDb = new CassandraEventsDB(configuration.underlying)
-    new MessagingContext(Akka.system, configuration.underlying)
+    Logger.info("EventsDB connection started.")
+    _users = new DbUserService(badgesDb)
+    val messagingEc = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(3))
+    val messaging = Future{
+      new MessagingContext(Akka.system, configuration.underlying)
+      Logger.info("Messaging connection started.")
+    }(messagingEc)
+    messaging.onFailure{
+      case e => Logger.error("Something happened with messaging", e)
+    }(messagingEc)
     Logger.info("Badger started.")
   }
 

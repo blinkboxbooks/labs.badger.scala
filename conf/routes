@@ -1,4 +1,3 @@
 GET     /status                       controllers.Application.status
 GET     /badges                       controllers.Application.badges
-GET     /categories                   controllers.Application.categories
-GET     /user/:userid                 controllers.Application.badgesForUser(userid)
+GET     /user/:userid                 controllers.Application.badgesForUser(userid: Long)

@@ -19,11 +19,7 @@ object Application extends Controller with JsonConverters{
     db.publicBadges.map(badge => Ok(Json.toJson(badge)))
   }
 
-  def categories = Action.async {
-    db.badgeCategories.map(cat => Ok(Json.toJson(cat)))
-  }
-
-  def badgesForUser(userId: String) = Action.async {
-    users.userStatus(userId).map(userData => Ok(Json.toJson(userData)))
+  def badgesForUser(userid: Long) = Action.async {
+    users.userStatus(userid).map(userData => Ok(Json.toJson(userData)))
   }
 }
