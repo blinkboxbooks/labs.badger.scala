@@ -1,13 +1,16 @@
 package services
 
+import java.util.concurrent.Executors
+
 import models._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future, blocking}
 import anorm._
 import play.api.db.DB
 
 class JdbcBadgesDB extends BadgesDB with Sqls{
   import play.api.Play.current
   import anorm.SqlParser._
+  private implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   private val badgesParser =
     str("badgeName") ~ str("badgeDescription") ~ str("badgeStatus") ~
@@ -62,23 +65,23 @@ class JdbcBadgesDB extends BadgesDB with Sqls{
     }
 
   override def publicBadges: Future[List[Badge]] =
-    Future.successful{
+    Future { blocking {
       DB.withConnection{implicit c =>
         SQL(PublicBadgesSQL).as(badgesConverter.*).toList
       }
-    }
+    }}
 
   override def badges(userId: Long): Future[List[UserBadge]] =
-    Future.successful{
+    Future { blocking {
       DB.withConnection{implicit c =>
         SQL(UserBadgesSQL)
           .on("userId" -> userId)
           .as(userBadgesConverter.*).toList
       }
-    }
+    }}
 
   override def saveBadge(badgePerUser: UserBadge): Future[Unit] =
-    Future.successful{
+    Future { blocking {
       DB.withConnection{implicit c =>
         SQL(AddUserBadgeSQL)
           .on("userId" -> badgePerUser.userId)
@@ -86,10 +89,10 @@ class JdbcBadgesDB extends BadgesDB with Sqls{
           .on("badgeName" -> badgePerUser.badge.name)
           .execute()
       }
-    }
+    }}
 
   override def bisac(bisacId: String): Future[Option[Bisac]] =
-    Future.successful{
+    Future { blocking {
       DB.withConnection{implicit c =>
         SQL(BisacSQL)
           .on("bisacId" -> bisacId)
@@ -102,14 +105,14 @@ class JdbcBadgesDB extends BadgesDB with Sqls{
                 name = categoryName))
           }
       }
-    }
+    }}
 
   override def rule(bisac: Bisac): Future[Option[Rule]] =
-    Future.successful{
+    Future { blocking {
       DB.withConnection{implicit c =>
         SQL(RuleByCategoryIdSQL)
           .on("categoryId" -> bisac.category.id)
           .as(ruleConverter.singleOpt)
       }
-    }
+    }}
 }
